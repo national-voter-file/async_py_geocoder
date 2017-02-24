@@ -1,0 +1,27 @@
+version: '2'
+services:
+  postgis:
+    image: mdillon/postgis:9.5
+    ports:
+      - "5432:5432"
+
+  elasticsearch:
+    image: elasticsearch:2.2.0
+    ports:
+      - "9200:9200"
+
+  # loader:
+  #   build: ./grasshopper-loader
+  #   links:
+  #     - elasticsearch
+  #   volumes:
+  #     - ./grasshopper-loader/test/data:/usr/src/app/test/data/
+
+  geocoder:
+    build: .
+    depends_on:
+      - postgis
+      - elasticsearch
+    volumes:
+      - .:/usr/src/app
+    env_file: .env
