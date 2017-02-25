@@ -12,7 +12,8 @@ exposed on your machine as environment variables. The operations we're running
 won't have a cost for anyone reading the data, but `boto3` requires valid credentials.
 
 Currently, there's an S3 bucket with this information ([viewer here](https://nvf-tiger-2016.s3.amazonaws.com/index.html)),
-but you can create one with a similar setup (SCRIPT PENDING).
+but you can create one with a similar setup by running the `create_tiger_s3.sh`
+on any machine with `aws-cli` installed.
 
 To run locally, just run:
 
