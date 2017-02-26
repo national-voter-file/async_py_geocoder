@@ -57,7 +57,7 @@ class AsyncGeocoder(object):
     def run(self):
         sem = asyncio.Semaphore(self.sem_count)
         loop = asyncio.get_event_loop()
-        conn = aiohttp.TCPConnector(limit=self.conn_limit)
+        conn = aiohttp.TCPConnector(limit=self.conn_limit, verify_ssl=False)
         client = aiohttp.ClientSession(connector=conn, loop=loop)
         loop.run_until_complete(self.geocoder_loop(sem, client))
 
@@ -73,28 +73,32 @@ class AsyncGeocoder(object):
         client.close()
 
     async def csv_loop(self, sem, client):
-        with open(self.csv_file, 'r') as f:
-            reader = csv.DictReader(f, delimiter=',')
-            addr_items = []
-            for i, row in enumerate(reader):
-                row_dict = {'id': i}
-                for k, v in row.items():
-                    if k in self.cols:
-                        row_dict[k] = v
-                addr_items.append(row_dict)
-
-        async with sem:
-            geocoded_addrs = await asyncio.gather(
-                *[self.handle_update(client, row) for row in addr_items]
-            )
-
-        geocoded_addrs = [a for a in geocoded_addrs if a is not None]
+        output_f = open(self.output_file, 'w')
         fieldnames = [c.lower() for c in self.cols] + ['lat', 'lon']
 
-        with open(self.output_file, 'w') as f:
-            writer = csv.DictWriter(f, delimiter=',', fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(geocoded_addrs)
+        writer = csv.DictWriter(output_f, delimiter=',', fieldnames=fieldnames)
+        writer.writeheader()
+
+        input_f = open(self.csv_file, 'r')
+        reader = csv.DictReader(input_f, delimiter=',')
+
+        async with sem:
+            await asyncio.gather(*(
+                self.handle_update(client, row_dict, writer=writer)
+                for row_dict in self.yield_csv_rows(reader)
+            ))
+
+        input_f.close()
+        output_f.close()
+
+    def yield_csv_rows(self, reader):
+        for i, row in enumerate(reader):
+            row_dict = {'id': i}
+            for k, v in row.items():
+                if k in self.cols:
+                    row_dict[k] = v
+
+            yield row_dict
 
     async def db_loop(self, sem, client):
         pool = await asyncpg.create_pool(**self.db_config)
@@ -136,15 +140,16 @@ class AsyncGeocoder(object):
                                    h_id=household_id)
                 await conn.execute(update_statement)
 
-    async def handle_update(self, client, row, pool=None):
+    async def handle_update(self, client, row, **kwargs):
         u_id, geom = await self.request_geocoder(client, row)
         if u_id:
             if self.csv_file:
+                print('Updating ID: {}'.format(u_id))
                 if geom:
                     row.update(geom)
-                return row
+                kwargs['writer'].writerow(row)
             else:
-                await self.update_address(pool, u_id, geom)
+                await self.update_address(kwargs['pool'], u_id, geom)
 
     async def request_geocoder(self, client, row):
         """

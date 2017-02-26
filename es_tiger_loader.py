@@ -9,6 +9,7 @@ from io import BytesIO
 import shapefile
 import pyproj
 from random import SystemRandom
+from itertools import chain
 from elasticsearch import Elasticsearch, helpers
 
 CURRENT_DIR = os.path.dirname(__file__)
@@ -23,7 +24,7 @@ bucket = s3.Bucket('nvf-tiger-2016')
 
 
 with open(os.path.join(CURRENT_DIR, 'es', 'census_schema.json'), 'r') as f:
-    censusSchema = json.load(f)
+    census_schema = json.load(f)
 
 with open(os.path.join(CURRENT_DIR, 'es', 'synonyms.json'), 'r') as f:
     synonyms = json.load(f)
@@ -33,6 +34,7 @@ with open(os.path.join(CURRENT_DIR, 'es', 'fips_state_map.csv'), 'r') as f:
     csv_reader = csv.reader(f, delimiter=',')
     for row in csv_reader:
         fips_state_map[row[1]] = row[0]
+
 
 tiger_settings = {
   "settings": {
@@ -70,7 +72,7 @@ tiger_settings = {
     }
   },
   "mappings": {
-    'addrfeat': censusSchema
+    'addrfeat': census_schema
   }
 }
 
@@ -119,14 +121,14 @@ if __name__ == '__main__':
     prefix_str = fips_state_map[state_str]
     feature_list = []
 
-    for o in bucket.objects.filter(Prefix='{}/'.format(prefix_str)):
-        reader = process_zip(o)
-        feature_list.extend(process_records(reader, state_str))
+    # Generator expression for pulling ADDRFEAT data for a single state
+    zip_yield = (process_records(process_zip(r), state_str)
+                 for r in bucket.objects.filter(Prefix='{}/'.format(prefix_str)))
 
+    # Generator expression unpacking sublist and yielding ES object
     es_gen = ({'_index': index_name,
                '_type': 'addrfeat',
-               '_source': f} for f in feature_list)
+               '_source': f} for sub in zip_yield for f in sub)
 
-    # TODO: Look into parallel and streaming
     helpers.bulk(es, es_gen)
     print(es.count(index=index_name))

@@ -6,69 +6,69 @@
           "type": "double"
         },
         "type": {
-          "type": "string"
+          "type": "text"
         }
       }
     },
     "properties": {
       "properties": {
         "ARIDL": {
-          "type": "string"
+          "type": "text"
         },
         "ARIDR": {
-          "type": "string"
+          "type": "text"
         },
         "EDGE_MTFCC": {
-          "type": "string"
+          "type": "text"
         },
         "FULLNAME": {
-          "type": "string",
+          "type": "text",
           "analyzer": "address_synonyms"
         },
         "LFROMHN": {
-          "type": "string"
+          "type": "text"
         },
         "LFROMTYP": {
-          "type": "string"
+          "type": "text"
         },
         "LINEARID": {
-          "type": "string"
+          "type": "text"
         },
         "LTOHN": {
-          "type": "string"
+          "type": "text"
         },
         "LTOTYP": {
-          "type": "string"
+          "type": "text"
         },
         "OFFSETL": {
-          "type": "string"
+          "type": "text"
         },
         "OFFSETR": {
-          "type": "string"
+          "type": "text"
         },
         "PARITYL": {
-          "type": "string"
+          "type": "text"
         },
         "PARITYR": {
-          "type": "string"
+          "type": "text"
         },
         "RFROMHN": {
-          "type": "string"
+          "type": "text"
         },
         "RFROMTYP": {
-          "type": "string"
+          "type": "text"
         },
         "ROAD_MTFCC": {
-          "type": "string"
+          "type": "text"
         },
         "RTOHN": {
-          "type": "string"
+          "type": "text"
         },
         "RTOTYP": {
-          "type": "string"
+          "type": "text"
         },
         "STATE": {
-          "type": "string",
+          "type": "text",
           "analyzer": "state_synonyms"
         },
         "TFIDL": {
@@ -81,15 +81,15 @@
           "type": "long"
         },
         "ZIPL": {
-          "type": "string"
+          "type": "text"
         },
         "ZIPR": {
-          "type": "string"
+          "type": "text"
         }
       }
     },
     "type": {
-      "type": "string"
+      "type": "text"
     }
   }
 }

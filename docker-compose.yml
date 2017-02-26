@@ -6,7 +6,9 @@ services:
       - "5432:5432"
 
   elasticsearch:
-    image: elasticsearch:2.2.0
+    image: elasticsearch:5.2.0
+    volumes:
+      - ./es/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     ports:
       - "9200:9200"
 

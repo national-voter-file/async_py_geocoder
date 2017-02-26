@@ -1,4 +1,5 @@
 from async_geocoder import AsyncGeocoder
+import asyncio
 from shapely.geometry import Point, LineString
 import json
 
@@ -10,8 +11,8 @@ class ElasticGeocoder(AsyncGeocoder):
     grasshopper-loader repo, address point and TIGER ADDRFEAT data. Interpolates
     any ADDRFEAT address range in order to get a single point.
     """
-    sem_count = 150
-    conn_limit = 50
+    sem_count = 200
+    conn_limit = 150
 
     q_type = 'census'
     es_url = 'http://elasticsearch:9200/{}/_search'.format(q_type)
@@ -40,6 +41,8 @@ class ElasticGeocoder(AsyncGeocoder):
         elif self.q_type == 'address':
             query_data = await self.create_point_query(row)
 
+        print('Sending ID {}'.format(row['id']))
+        # asyncio.sleep(0.1)
         async with client.post(self.es_url.format(q_idx=self.q_type),
                                data=json.dumps(query_data)) as response:
             response_json = await response.json()
