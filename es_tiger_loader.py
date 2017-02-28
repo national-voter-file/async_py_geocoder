@@ -119,7 +119,6 @@ if __name__ == '__main__':
 
     state_str = sys.argv[1].upper()
     prefix_str = fips_state_map[state_str]
-    feature_list = []
 
     # Generator expression for pulling ADDRFEAT data for a single state
     zip_yield = (process_records(process_zip(r), state_str)

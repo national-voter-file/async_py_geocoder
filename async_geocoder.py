@@ -81,12 +81,11 @@ class AsyncGeocoder(object):
 
         input_f = open(self.csv_file, 'r')
         reader = csv.DictReader(input_f, delimiter=',')
-
-        async with sem:
-            await asyncio.gather(*(
-                self.handle_update(client, row_dict, writer=writer)
-                for row_dict in self.yield_csv_rows(reader)
-            ))
+        
+        await asyncio.gather(*(
+            self.handle_update(client, row_dict, writer=writer)
+            for row_dict in self.yield_csv_rows(reader)
+        ))
 
         input_f.close()
         output_f.close()

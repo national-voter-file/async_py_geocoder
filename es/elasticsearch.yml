@@ -13,5 +13,5 @@ node.name: test-01
 http.host: 0.0.0.0
 
 # Search pool
-thread_pool.search.size: 20
-thread_pool.search.queue_size: 10000
+thread_pool.search.size: 30
+thread_pool.search.queue_size: 15000
