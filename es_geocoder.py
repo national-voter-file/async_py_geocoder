@@ -16,8 +16,7 @@ class ElasticGeocoder(AsyncGeocoder):
     grasshopper-loader repo, address point and TIGER ADDRFEAT data. Interpolates
     any ADDRFEAT address range in order to get a single point.
     """
-    sem_count = 50
-    conn_limit = 30
+    conn_limit = 100
 
     q_type = 'census'
     es_url = 'http://elasticsearch:9200/{}/_search'.format(q_type)

@@ -51,7 +51,7 @@ class AsyncGeocoder(object):
     csv_file = None
     output_file = None
 
-    sem_count = 1000
+    sem_count = 500
     conn_limit = 200
     query_limit = 10000
 
@@ -88,10 +88,11 @@ class AsyncGeocoder(object):
         input_f = open(self.csv_file, 'r')
         reader = csv.DictReader(input_f, delimiter=',')
         
-        await asyncio.gather(*(
-            self.handle_update(client, row_dict, writer=writer)
-            for row_dict in self.yield_csv_rows(reader)
-        ))
+        async with sem:
+            await asyncio.gather(*(
+                self.handle_update(client, row_dict, writer=writer)
+                for row_dict in self.yield_csv_rows(reader)
+            ))
 
         input_f.close()
         output_f.close()
@@ -146,6 +147,7 @@ class AsyncGeocoder(object):
                 await conn.execute(update_statement)
 
     async def handle_update(self, client, row, **kwargs):
+        asyncio.sleep(0.1)
         u_id, geom = await self.request_geocoder(client, row)
         if u_id:
             if self.csv_file:
