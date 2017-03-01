@@ -27,7 +27,7 @@ docker-compose up
 If you've successfully built and started the containers as shown above, you should
 be able to start loading TIGER data with:
 
-`docker-compose run geocoder python /geocoder/es_tiger_loader.py WA`
+`docker-compose run geocoder python es_tiger_loader.py WA`
 
 Where `WA` is the two letter state abbreviation for the state you want to load
 TIGER data from.

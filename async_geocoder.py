@@ -4,6 +4,11 @@ import asyncio
 import asyncpg
 import json
 import csv
+import sys
+import logging
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+log = logging.getLogger()
 
 
 class AsyncGeocoder(object):
@@ -57,6 +62,7 @@ class AsyncGeocoder(object):
     def run(self):
         sem = asyncio.Semaphore(self.sem_count)
         loop = asyncio.get_event_loop()
+        loop.set_debug(enabled=True)
         conn = aiohttp.TCPConnector(limit=self.conn_limit, verify_ssl=False)
         client = aiohttp.ClientSession(connector=conn, loop=loop)
         loop.run_until_complete(self.geocoder_loop(sem, client))
