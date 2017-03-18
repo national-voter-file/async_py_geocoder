@@ -12,7 +12,6 @@ services:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - thread_pool.search.size=30
       - thread_pool.search.queue_size=10000
       - node.max_local_storage_nodes=20
     ulimits:
@@ -39,7 +38,6 @@ services:
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - "discovery.zen.ping.unicast.hosts=elasticsearch"
-      - thread_pool.search.size=30
       - thread_pool.search.queue_size=10000
       - node.max_local_storage_nodes=20
     ulimits:

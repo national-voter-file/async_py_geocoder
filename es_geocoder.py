@@ -44,21 +44,16 @@ class ElasticGeocoder(AsyncGeocoder):
             query_data = await self.create_census_query(row)
         elif self.q_type == 'address':
             query_data = await self.create_point_query(row)
-
-        print('Sending ID {}'.format(row['id']))
+            
         async with client.post(self.es_url.format(q_idx=self.q_type),
                                data=json.dumps(query_data)) as response:
             response_json = await response.json()
 
             if not 'hits' in response_json:
-                print(response.headers)
-                print(response_json)
                 return row['id'], None
             elif response_json['hits'].get('hits', 0) == 0:
-                print('Fail 2')
                 return row['id'], None
             elif len(response_json['hits']['hits']) == 0:
-                print('Fail 3')
                 return row['id'], None
 
             addr_hit = response_json['hits']['hits'][0]

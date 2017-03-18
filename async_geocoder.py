@@ -7,9 +7,16 @@ import csv
 import sys
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from itertools import zip_longest
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 log = logging.getLogger()
+
+
+# Itertools chunking from standard lib examples
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
 
 
 class AsyncGeocoder(object):
@@ -53,8 +60,8 @@ class AsyncGeocoder(object):
     output_file = None
 
     sem_count = 50
-    conn_limit = 20
-    query_limit = 10000
+    conn_limit = 50
+    query_limit = 1000
 
     def __init__(self, *args, **kwargs):
         for k, v in kwargs.items():
@@ -85,20 +92,25 @@ class AsyncGeocoder(object):
 
         writer = csv.DictWriter(output_f, delimiter=',', fieldnames=fieldnames)
         writer.writeheader()
-        output_executor = ThreadPoolExecutor(max_workers=4)
+        output_executor = ThreadPoolExecutor(max_workers=8)
 
         input_f = open(self.csv_file, 'r')
         reader = enumerate(csv.DictReader(input_f, delimiter=','))
-        input_executor = ThreadPoolExecutor(max_workers=24)
-        # print('startign threadpool executor')
-        # csv_row_gen = input_executor.map(self.yield_csv_rows, reader)
-        csv_row_gen = (input_executor.submit(self.yield_csv_rows, (i, r)) for i, r in reader)
+        input_executor = ThreadPoolExecutor(max_workers=8)
 
-        print('startign loop with sem')
+        csv_slice_gen = grouper(
+            (input_executor.submit(self.yield_csv_rows, (i, r)) for i, r in reader),
+            self.query_limit
+        )
+
         async with sem:
-            for row_dict in as_completed(csv_row_gen):
-                asyncio.ensure_future(self.handle_update(
-                    client, row_dict, executor=output_executor, writer=writer
+            for row_slice in csv_slice_gen:
+                await asyncio.gather(*(
+                    self.handle_update(
+                        sem, client, row.result(),
+                        executor=output_executor, writer=writer
+                    )
+                    for row in as_completed(row_slice)
                 ))
 
         input_executor.shutdown()
@@ -106,14 +118,13 @@ class AsyncGeocoder(object):
         output_executor.shutdown()
         output_f.close()
 
-    def yield_csv_rows(self, i, row):
+    def yield_csv_rows(self, row):
+        i, row = row
         row_dict = {'id': i}
         for k, v in row.items():
             if k in self.cols:
                 row_dict[k] = v
-
-        # return row_dict
-        yield row_dict
+        return row_dict
 
     def write_csv_row(self, writer, row):
         writer.writerow(row)
@@ -123,8 +134,10 @@ class AsyncGeocoder(object):
         async with sem:
             while True:
                 addrs_to_geocode = await self.get_unmatched_addresses(pool)
-                await asyncio.gather(*[self.handle_update(client, row, pool)
-                                       for row in addrs_to_geocode])
+                await asyncio.gather(
+                    *[self.handle_update(sem, client, row, pool)
+                    for row in addrs_to_geocode]
+                )
 
     async def update_address(self, pool, household_id, addr_dict):
         async with pool.acquire() as conn:
@@ -158,12 +171,11 @@ class AsyncGeocoder(object):
                                    h_id=household_id)
                 await conn.execute(update_statement)
 
-    async def handle_update(self, client, row, **kwargs):
-        asyncio.sleep(0.1)
-        u_id, geom = await self.request_geocoder(client, row)
+    async def handle_update(self, sem, client, row, **kwargs):
+        async with sem:
+            u_id, geom = await self.request_geocoder(client, row)
         if u_id:
             if self.csv_file:
-                print('Updating ID: {}'.format(u_id))
                 if geom:
                     row.update(geom)
                 kwargs['executor'].submit(
