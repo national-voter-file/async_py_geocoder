@@ -3,15 +3,12 @@ services:
   postgis:
     image: mdillon/postgis:9.5
     ports:
-      - "5432:5432"
+      - "54321:5432"
 
   elasticsearch:
     image: elasticsearch:5.2.0
-    container_name: elasticsearch
     environment:
-      - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - thread_pool.search.queue_size=10000
       - node.max_local_storage_nodes=20
     ulimits:
@@ -21,39 +18,9 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    mem_limit: 1g
-    cap_add:
-      - IPC_LOCK
-    volumes:
-      - esdata1:/usr/share/elasticsearch/data
+    mem_limit: 6g
     ports:
       - 9200:9200
-    networks:
-      - esnet
-
-  elasticsearch2:
-    image: elasticsearch:5.2.0
-    environment:
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "discovery.zen.ping.unicast.hosts=elasticsearch"
-      - thread_pool.search.queue_size=10000
-      - node.max_local_storage_nodes=20
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    mem_limit: 1g
-    cap_add:
-      - IPC_LOCK
-    volumes:
-      - esdata2:/usr/share/elasticsearch/data
-    networks:
-      - esnet
 
   geocoder:
     build: .
@@ -63,22 +30,10 @@ services:
     volumes:
       - .:/usr/src/app
     env_file: .env
-    networks:
-      - esnet
 
-    # loader:
-    #   build: ./grasshopper-loader
-    #   links:
-    #     - elasticsearch
-    #   volumes:
-    #     - ./grasshopper-loader/test/data:/usr/src/app/test/data/
-
-volumes:
-  esdata1:
-    driver: local
-  esdata2:
-    driver: local
-
-networks:
-  esnet:
-    driver: bridge
+  # loader:
+  #   build: ./grasshopper-loader
+  #   links:
+  #     - elasticsearch
+  #   volumes:
+  #     - ./grasshopper-loader/test/data:/usr/src/app/test/data/

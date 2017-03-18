@@ -45,7 +45,7 @@ class AsyncGeocoder(object):
 
     db_config = {
         'host': 'postgis',
-        'port': 5432,
+        'port': 54321,
         'database': None,
         'user': 'postgres',
         'password': None
@@ -134,6 +134,8 @@ class AsyncGeocoder(object):
         async with sem:
             while True:
                 addrs_to_geocode = await self.get_unmatched_addresses(pool)
+                if not len(addrs_to_geocode):
+                    break
                 await asyncio.gather(
                     *[self.handle_update(sem, client, row, pool)
                     for row in addrs_to_geocode]

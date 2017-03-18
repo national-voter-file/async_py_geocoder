@@ -4,6 +4,7 @@ from shapely.geometry import Point, LineString
 import json
 import sys
 import logging
+import re
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 log = logging.getLogger()
@@ -44,7 +45,7 @@ class ElasticGeocoder(AsyncGeocoder):
             query_data = await self.create_census_query(row)
         elif self.q_type == 'address':
             query_data = await self.create_point_query(row)
-            
+
         async with client.post(self.es_url.format(q_idx=self.q_type),
                                data=json.dumps(query_data)) as response:
             response_json = await response.json()
@@ -94,7 +95,7 @@ class ElasticGeocoder(AsyncGeocoder):
         )
         line_len = data_line.length
 
-        addr_int = int(data['address_number'])
+        addr_int = int(re.sub('[^0-9]', '', data['address_number']))
         addr_is_even = addr_int % 2 == 0
 
         l_range = await self.handle_census_range(
