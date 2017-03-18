@@ -129,5 +129,8 @@ if __name__ == '__main__':
                '_type': 'addrfeat',
                '_source': f} for sub in zip_yield for f in sub)
 
-    helpers.bulk(es, es_gen)
+    for ok, item in helpers.parallel_bulk(es, es_gen, thread_count=8):
+        if not ok:
+            print('Error: {}'.format(item))
+            
     print(es.count(index=index_name))

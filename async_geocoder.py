@@ -6,6 +6,7 @@ import json
 import csv
 import sys
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 log = logging.getLogger()
@@ -51,8 +52,8 @@ class AsyncGeocoder(object):
     csv_file = None
     output_file = None
 
-    sem_count = 500
-    conn_limit = 200
+    sem_count = 50
+    conn_limit = 20
     query_limit = 10000
 
     def __init__(self, *args, **kwargs):
@@ -84,27 +85,38 @@ class AsyncGeocoder(object):
 
         writer = csv.DictWriter(output_f, delimiter=',', fieldnames=fieldnames)
         writer.writeheader()
+        output_executor = ThreadPoolExecutor(max_workers=4)
 
         input_f = open(self.csv_file, 'r')
-        reader = csv.DictReader(input_f, delimiter=',')
-        
-        async with sem:
-            await asyncio.gather(*(
-                self.handle_update(client, row_dict, writer=writer)
-                for row_dict in self.yield_csv_rows(reader)
-            ))
+        reader = enumerate(csv.DictReader(input_f, delimiter=','))
+        input_executor = ThreadPoolExecutor(max_workers=24)
+        # print('startign threadpool executor')
+        # csv_row_gen = input_executor.map(self.yield_csv_rows, reader)
+        csv_row_gen = (input_executor.submit(self.yield_csv_rows, (i, r)) for i, r in reader)
 
+        print('startign loop with sem')
+        async with sem:
+            for row_dict in as_completed(csv_row_gen):
+                asyncio.ensure_future(self.handle_update(
+                    client, row_dict, executor=output_executor, writer=writer
+                ))
+
+        input_executor.shutdown()
         input_f.close()
+        output_executor.shutdown()
         output_f.close()
 
-    def yield_csv_rows(self, reader):
-        for i, row in enumerate(reader):
-            row_dict = {'id': i}
-            for k, v in row.items():
-                if k in self.cols:
-                    row_dict[k] = v
+    def yield_csv_rows(self, i, row):
+        row_dict = {'id': i}
+        for k, v in row.items():
+            if k in self.cols:
+                row_dict[k] = v
 
-            yield row_dict
+        # return row_dict
+        yield row_dict
+
+    def write_csv_row(self, writer, row):
+        writer.writerow(row)
 
     async def db_loop(self, sem, client):
         pool = await asyncpg.create_pool(**self.db_config)
@@ -154,7 +166,9 @@ class AsyncGeocoder(object):
                 print('Updating ID: {}'.format(u_id))
                 if geom:
                     row.update(geom)
-                kwargs['writer'].writerow(row)
+                kwargs['executor'].submit(
+                    lambda x: self.write_csv_row(kwargs['writer'], x), row
+                )
             else:
                 await self.update_address(kwargs['pool'], u_id, geom)
 
