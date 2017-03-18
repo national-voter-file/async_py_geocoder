@@ -27,20 +27,13 @@ docker-compose up
 If you've successfully built and started the containers as shown above, you should
 be able to start loading TIGER data with:
 
-`docker-compose run geocoder python es_tiger_loader.py WA`
+`docker-compose run geocoder es_tiger_loader.py WA`
 
 Where `WA` is the two letter state abbreviation for the state you want to load
 TIGER data from.
-
-The [`grasshopper-loader`](https://github.com/cfpb/grasshopper-loader) repository
-will work for loading address point data (following their instructions for `index.js`),
-and you can clone it into the `geocoder` directory and it will be ignored by git.
-Uncomment the `loader` section of the `docker-compose` file, and run:
-
-`docker-compose run loader ./index.js -h elasticsearch -f ./data.json`
 
 ### Running the Geocoder
 
 To start the geocoder itself (which can run into issues if it's started at
 the same time as the other containers), run
-`docker-compose run geocoder python run_geocoder.py`
+`docker-compose run geocoder run.py ./data/input_file.csv`

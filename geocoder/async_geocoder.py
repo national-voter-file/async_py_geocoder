@@ -8,6 +8,7 @@ import sys
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import zip_longest
+import time
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 log = logging.getLogger()
@@ -73,6 +74,7 @@ class AsyncGeocoder(object):
         loop.set_debug(enabled=True)
         conn = aiohttp.TCPConnector(limit=self.conn_limit, verify_ssl=False)
         client = aiohttp.ClientSession(connector=conn, loop=loop)
+        self.time1 = time.time()
         loop.run_until_complete(self.geocoder_loop(sem, client))
 
     async def geocoder_loop(self, sem, client):
@@ -85,6 +87,8 @@ class AsyncGeocoder(object):
         else:
             await self.db_loop(sem, client)
         client.close()
+        time2 = time.time()
+        print('Geocoding took {:2.4f} seconds'.format(time2-self.time1))
 
     async def csv_loop(self, sem, client):
         output_f = open(self.output_file, 'w')

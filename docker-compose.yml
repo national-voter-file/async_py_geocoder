@@ -23,17 +23,12 @@ services:
       - 9200:9200
 
   geocoder:
-    build: .
+    build: ./geocoder
     depends_on:
       - postgis
       - elasticsearch
     volumes:
-      - .:/usr/src/app
+      - ./geocoder:/usr/src/app
+    entrypoint:
+      - python
     env_file: .env
-
-  # loader:
-  #   build: ./grasshopper-loader
-  #   links:
-  #     - elasticsearch
-  #   volumes:
-  #     - ./grasshopper-loader/test/data:/usr/src/app/test/data/
