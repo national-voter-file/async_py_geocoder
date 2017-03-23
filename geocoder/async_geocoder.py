@@ -59,6 +59,7 @@ class AsyncGeocoder(object):
 
     csv_file = None
     output_file = None
+    state = None
 
     sem_count = 50
     conn_limit = 50
@@ -85,6 +86,7 @@ class AsyncGeocoder(object):
         if self.csv_file:
             await self.csv_loop(sem, client)
         else:
+            self.query_limit *= 10
             await self.db_loop(sem, client)
         client.close()
         time2 = time.time()
@@ -141,9 +143,27 @@ class AsyncGeocoder(object):
                 if not len(addrs_to_geocode):
                     break
                 await asyncio.gather(
-                    *[self.handle_update(sem, client, row, pool)
+                    *[self.handle_update(sem, client, row, pool=pool)
                     for row in addrs_to_geocode]
                 )
+
+    async def get_unmatched_addresses(self, pool):
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                # Run the query passing the request argument.
+                query_address = '''
+                    SELECT {columns}
+                    FROM {table}
+                    WHERE {geo_status_col} = 1
+                    '''.format(table=self.db_table,
+                               columns=', '.join(self.cols),
+                               geo_status_col=self.geo_status_col,
+                               limit=self.query_limit)
+                if self.state:
+                    query_address += '\nAND state_name = {}'.format(self.state)
+                query_address += '\nLIMIT {}'.format(self.query_limit)
+
+                return await conn.fetch(query_address)
 
     async def update_address(self, pool, household_id, addr_dict):
         async with pool.acquire() as conn:
@@ -188,7 +208,8 @@ class AsyncGeocoder(object):
                     lambda x: self.write_csv_row(kwargs['writer'], x), row
                 )
             else:
-                await self.update_address(kwargs['pool'], u_id, geom)
+                async with sem:
+                    await self.update_address(kwargs['pool'], u_id, geom)
 
     async def request_geocoder(self, client, row):
         """

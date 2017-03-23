@@ -24,13 +24,7 @@ class ElasticGeocoder(AsyncGeocoder):
     # Mapping of columns to desired ones here, substitute other columns names
     # as the new keys, while the values should remain the same
     col_map = {
-        'id': 'id',
-        'ADDRESS_NUMBER': 'address_number',
-        'STREET_NAME': 'street_name',
-        'STREET_NAME_POST_TYPE': 'street_name_post_type',
-        'PLACE_NAME': 'place_name',
-        'ZIP_CODE': 'zip_code',
-        'STATE_NAME': 'state_name'
+        'household_id': 'id'
     }
 
     def __init__(self, *args, **kwargs):
@@ -38,6 +32,7 @@ class ElasticGeocoder(AsyncGeocoder):
 
     async def request_geocoder(self, client, row):
         # Replace col names
+        row = dict(row)
         for k, v in self.col_map.items():
             row[v] = row.pop(k, None)
 
@@ -95,7 +90,10 @@ class ElasticGeocoder(AsyncGeocoder):
         )
         line_len = data_line.length
 
-        addr_int = int(re.sub('[^0-9]', '', data['address_number']))
+        if data['address_number']:
+            addr_int = int(re.sub('[^0-9]', '', str(data['address_number'])))
+        else:
+            addr_int = 0
         addr_is_even = addr_int % 2 == 0
 
         l_range = await self.handle_census_range(
@@ -149,10 +147,11 @@ class ElasticGeocoder(AsyncGeocoder):
                 {'term': {'properties.street': data['street_name_post_type'].lower()}}
             )
 
-        for s in data['street_name'].split(' '):
-            point_query['query']['bool']['must'].append(
-                {'term': {"properties.street": s.lower()}}
-            )
+        if data['street_name']:
+            for s in data['street_name'].split(' '):
+                point_query['query']['bool']['must'].append(
+                    {'term': {"properties.street": s.lower()}}
+                )
 
         return point_query
 
@@ -225,8 +224,9 @@ class ElasticGeocoder(AsyncGeocoder):
                 {'term': {'properties.FULLNAME': data['street_name_post_type'].lower()}}
             )
 
-        for s in data['street_name'].split(' '):
-            census_query['query']['bool']['must'].append(
-                {'term': {"properties.FULLNAME": s.lower()}}
-            )
+        if data['street_name']:
+            for s in data['street_name'].split(' '):
+                census_query['query']['bool']['must'].append(
+                    {'term': {"properties.FULLNAME": s.lower()}}
+                )
         return census_query

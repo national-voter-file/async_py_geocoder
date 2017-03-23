@@ -35,5 +35,8 @@ TIGER data from.
 ### Running the Geocoder
 
 To start the geocoder itself (which can run into issues if it's started at
-the same time as the other containers), run
-`docker-compose run geocoder run.py ./data/input_file.csv`
+the same time as the other containers), run:
+
+**CSV:** `docker-compose run geocoder run.py -s WA ./data/input_file.csv`
+
+**Postgres:** `docker-compose run geocoder run.py -s WA ./config.json `

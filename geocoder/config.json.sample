@@ -1,0 +1,21 @@
+{
+  "db_table": "household_dim",
+  "id_col": "household_id",
+  "geo_status_col": "geocode_status",
+  "cols": [
+      "household_id",
+      "address_number",
+      "street_name",
+      "street_name_post_type",
+      "place_name",
+      "state_name",
+      "zip_code"
+  ],
+  "db_config": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "voter",
+    "user": "postgres",
+    "password": ""
+  }
+}

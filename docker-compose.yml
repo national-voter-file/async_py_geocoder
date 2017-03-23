@@ -1,10 +1,5 @@
 version: '2'
 services:
-  postgis:
-    image: mdillon/postgis:9.5
-    ports:
-      - "54321:5432"
-
   elasticsearch:
     image: elasticsearch:5.2.0
     environment:
@@ -25,7 +20,6 @@ services:
   geocoder:
     build: ./geocoder
     depends_on:
-      - postgis
       - elasticsearch
     volumes:
       - ./geocoder:/usr/src/app

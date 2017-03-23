@@ -3,4 +3,4 @@ __pycache__
 venv
 .env
 geocoder/data/*.csv
-grasshopper-loader
+geocoder/config.json
