@@ -34,7 +34,8 @@ class ElasticGeocoder(AsyncGeocoder):
         # Replace col names
         row = dict(row)
         for k, v in self.col_map.items():
-            row[v] = row.pop(k, None)
+            if k in row:
+                row[v] = row.pop(k, None)
 
         if self.q_type == 'census':
             query_data = await self.create_census_query(row)
@@ -44,7 +45,6 @@ class ElasticGeocoder(AsyncGeocoder):
         async with client.post(self.es_url.format(q_idx=self.q_type),
                                data=json.dumps(query_data)) as response:
             response_json = await response.json()
-
             if not 'hits' in response_json:
                 return row['id'], None
             elif response_json['hits'].get('hits', 0) == 0:

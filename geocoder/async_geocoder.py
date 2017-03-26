@@ -7,7 +7,7 @@ import csv
 import sys
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from itertools import zip_longest
+from itertools import zip_longest, takewhile
 import time
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -18,6 +18,11 @@ log = logging.getLogger()
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
+
+
+def trim_grouper(iterable, n, fillvalue=None):
+    for group in grouper(iterable, n, fillvalue=fillvalue):
+        yield tuple(takewhile((lambda x: x), group))
 
 
 class AsyncGeocoder(object):
@@ -104,7 +109,7 @@ class AsyncGeocoder(object):
         reader = enumerate(csv.DictReader(input_f, delimiter=','))
         input_executor = ThreadPoolExecutor(max_workers=8)
 
-        csv_slice_gen = grouper(
+        csv_slice_gen = trim_grouper(
             (input_executor.submit(self.yield_csv_rows, (i, r)) for i, r in reader),
             self.query_limit
         )
@@ -127,8 +132,9 @@ class AsyncGeocoder(object):
     def yield_csv_rows(self, row):
         i, row = row
         row_dict = {'id': i}
+        check_cols = self.cols + [c.lower() for c in self.cols]
         for k, v in row.items():
-            if k in self.cols:
+            if k in check_cols:
                 row_dict[k] = v
         return row_dict
 
