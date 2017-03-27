@@ -24,7 +24,15 @@ class ElasticGeocoder(AsyncGeocoder):
     # Mapping of columns to desired ones here, substitute other columns names
     # as the new keys, while the values should remain the same
     col_map = {
-        'household_id': 'id'
+        'ID': 'id',
+        'household_id': 'id',
+        'HOUSEHOLD_ID': 'id',
+        'ADDRESS_NUMBER': 'address_number',
+        'STREET_NAME': 'street_name',
+        'STREET_NAME_POST_TYPE': 'street_name_post_type',
+        'PLACE_NAME': 'place_name',
+        'STATE_NAME': 'state_name',
+        'ZIP_CODE': 'zip_code'
     }
 
     def __init__(self, *args, **kwargs):

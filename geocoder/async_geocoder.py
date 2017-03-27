@@ -49,13 +49,7 @@ class AsyncGeocoder(object):
         'ZIP_CODE'
     ]
 
-    db_config = {
-        'host': 'postgis',
-        'port': 54321,
-        'database': None,
-        'user': 'postgres',
-        'password': None
-    }
+    db_config = {}
     db_table = None
     # ID and geography col default to id and geom
     id_col = 'id'
@@ -135,7 +129,7 @@ class AsyncGeocoder(object):
         check_cols = self.cols + [c.lower() for c in self.cols]
         for k, v in row.items():
             if k in check_cols:
-                row_dict[k] = v
+                row_dict[k.lower()] = v
         return row_dict
 
     def write_csv_row(self, writer, row):
