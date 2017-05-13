@@ -34,6 +34,7 @@ with open(os.path.join(CURRENT_DIR, 'es', 'fips_state_map.csv'), 'r') as f:
     csv_reader = csv.reader(f, delimiter=',')
     for row in csv_reader:
         fips_state_map[row[1]] = row[0]
+        fips_state_map[row[0]] = row[1]
 
 
 tiger_settings = {
@@ -117,12 +118,19 @@ if __name__ == '__main__':
     es.indices.create(index=index_name, body=tiger_settings)
     es.indices.put_alias(index=index_name, name='census')
 
-    state_str = sys.argv[1].upper()
-    prefix_str = fips_state_map[state_str]
+    args = sys.argv[1]
+    if args.isdigit():
+        prefix = args
+        state_str = fips_state_map[prefix[:2]]
+        prefix_str = '{}/tl_2016_{}'.format(prefix[:2], prefix)
+    else:
+        state_str = args.upper()
+        prefix = fips_state_map[state_str]
+        prefix_str += '/'
 
     # Generator expression for pulling ADDRFEAT data for a single state
     zip_yield = (process_records(process_zip(r), state_str)
-                 for r in bucket.objects.filter(Prefix='{}/'.format(prefix_str)))
+                 for r in bucket.objects.filter(Prefix=prefix_str))
 
     # Generator expression unpacking sublist and yielding ES object
     es_gen = ({'_index': index_name,

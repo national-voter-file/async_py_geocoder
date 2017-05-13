@@ -32,6 +32,13 @@ be able to start loading TIGER data with:
 Where `WA` is the two letter state abbreviation for the state you want to load
 TIGER data from.
 
+Alternatively, to restrict the search area more, you can enter the five digit
+FIPS code for a state and county to load just that county. You can find all county
+FIPS codes [at this Census link](https://www.census.gov/geo/reference/codes/cou.html).
+For Cook County, IL:
+
+`docker-compose run geocoder es_tiger_loader.py 17031`
+
 ### Running the Geocoder
 
 To start the geocoder itself (which can run into issues if it's started at
