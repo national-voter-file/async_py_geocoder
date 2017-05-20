@@ -237,4 +237,10 @@ class ElasticGeocoder(AsyncGeocoder):
                 census_query['query']['bool']['must'].append(
                     {'term': {"properties.FULLNAME": s.lower()}}
                 )
+
+        if data['place_name']:
+            for p in data['place_name'].split(' '):
+                census_query['query']['bool']['should'].append(
+                    {'term': {'properties.PLACE': p.lower()}}
+                )
         return census_query
