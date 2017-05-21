@@ -52,6 +52,9 @@
         "PARITYR": {
           "type": "text"
         },
+        "PLACE": {
+          "type": "text"
+        },
         "RFROMHN": {
           "type": "text"
         },
