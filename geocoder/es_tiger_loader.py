@@ -4,6 +4,7 @@ import sys
 import json
 import csv
 import os
+import argparse
 import string
 from io import BytesIO
 import shapefile
@@ -20,10 +21,21 @@ CURRENT_DIR = os.path.dirname(__file__)
 wgs84 = pyproj.Proj('+init=EPSG:4326')
 nad83 = pyproj.Proj('+init=EPSG:4269')
 
-s3 = boto3.resource('s3',
-                    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-                    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'))
-bucket = s3.Bucket('nvf-tiger-2016')
+s3 = boto3.resource(
+    's3',
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    aws_session_token=os.getenv('AWS_SESSION_TOKEN')
+)
+
+parser = argparse.ArgumentParser(description='Elasticsearch census loader')
+
+parser.add_argument('geo_id', help='Geo identifier (State abbrev, FIPS code)')
+parser.add_argument('-b', '--s3_bucket', dest='s3_bucket', required=False,
+                    help='Specify S3 bucket if uploading result to S3',
+                    default='nvf-tiger-2016')
+parser.add_argument('-h', '--es_host', dest='es_host', required=False,
+                    help='Specify Elasticsearch host', default='elasticsearch')
 
 
 with open(os.path.join(CURRENT_DIR, 'es', 'census_schema.json'), 'r') as f:
@@ -81,9 +93,9 @@ tiger_settings = {
 }
 
 
-def make_place_rtree(state_str):
+def make_place_rtree(bucket_str, state_str):
     fips_state = fips_state_map[state_str]
-    place_obj = s3.Object('nvf-tiger-2016', 'PLACE/tl_2016_{}_place.zip'.format(fips_state))
+    place_obj = s3.Object(bucket_str, 'PLACE/tl_2016_{}_place.zip'.format(fips_state))
     place_bytes = BytesIO(place_obj.get()['Body'].read())
     place_zip = ZipFile(place_bytes)
     place_shp = shapefile.Reader(
@@ -153,24 +165,26 @@ def process_records(reader, place_idx, state_str):
 
 
 if __name__ == '__main__':
+    args = parser.parse_args()
+
     rand_str = ''.join(SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(6))
     index_name = 'tiger-{}'.format(rand_str)
 
-    es = Elasticsearch(host='elasticsearch')
+    es = Elasticsearch(host=args.es_host)
     es.indices.create(index=index_name, body=tiger_settings)
     es.indices.put_alias(index=index_name, name='census')
 
-    args = sys.argv[1]
-    if args.isdigit():
-        prefix = args
+    if args.geo_id.isdigit():
+        prefix = args.geo_id
         state_str = fips_state_map[prefix[:2]]
         prefix_str = '{}/tl_2016_{}'.format(prefix[:2], prefix)
     else:
-        state_str = args.upper()
+        state_str = args.geo_id.upper()
         prefix = fips_state_map[state_str]
         prefix_str = prefix + '/'
 
-    place_map, place_idx = make_place_rtree(state_str)
+    bucket = s3.Bucket(args.s3_bucket)
+    place_map, place_idx = make_place_rtree(args.s3_bucket, state_str)
 
     # Generator expression for pulling ADDRFEAT data for a single state
     zip_yield = (process_records(process_zip(r), place_idx, state_str)

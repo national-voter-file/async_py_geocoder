@@ -20,7 +20,7 @@ class ElasticGeocoder(AsyncGeocoder):
     conn_limit = 100
 
     q_type = 'census'
-    es_url = 'http://elasticsearch:9200/{}/_search'.format(q_type)
+    es_host = None
     # Mapping of columns to desired ones here, substitute other columns names
     # as the new keys, while the values should remain the same
     col_map = {
@@ -37,6 +37,7 @@ class ElasticGeocoder(AsyncGeocoder):
 
     def __init__(self, *args, **kwargs):
         super(ElasticGeocoder, self).__init__(self, *args, **kwargs)
+        self.es_url = 'http://{}:9200/{}/_search'.format(self.es_host, self.q_type)
 
     async def request_geocoder(self, client, row):
         # Replace col names

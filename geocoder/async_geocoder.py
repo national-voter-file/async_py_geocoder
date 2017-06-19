@@ -1,4 +1,5 @@
 import os
+import boto3
 import aiohttp
 import asyncio
 import asyncpg
@@ -58,6 +59,8 @@ class AsyncGeocoder(object):
 
     csv_file = None
     output_file = None
+    s3_bucket = None
+    es_host = None
     state = None
 
     sem_count = 50
@@ -90,9 +93,14 @@ class AsyncGeocoder(object):
         client.close()
         time2 = time.time()
         print('Geocoding took {:2.4f} seconds'.format(time2-self.time1))
+        if self.s3_bucket:
+            s3 = boto3.resource('s3')
+            s3.Object(self.s3_bucket, self.output_file).upload_file(self.output_file)
 
     async def csv_loop(self, sem, client):
-        output_f = open(self.output_file, 'w')
+        # Cleaning up CSV output (so that full S3 paths can be used even if local dirs don't exist
+        csv_output_file = os.path.join('data', self.output_file.split('/')[-1])
+        output_f = open(csv_output_file, 'w')
         fieldnames = [c.lower() for c in self.cols] + ['lat', 'lon']
 
         writer = csv.DictWriter(output_f, delimiter=',', fieldnames=fieldnames)
