@@ -13,7 +13,7 @@ parser.add_argument('-s', '--state', dest='state', required=False,
                     help='Two-letter postal code abbreviation to run only one state')
 parser.add_argument('-b', '--s3_bucket', dest='s3_bucket', required=False,
                     help='Specify S3 bucket if uploading result to S3')
-parser.add_argument('-h', '--es_host', dest='es_host', required=False,
+parser.add_argument('-e', '--es_host', dest='es_host', required=False,
                     help='Specify Elasticsearch host', default='elasticsearch')
 
 

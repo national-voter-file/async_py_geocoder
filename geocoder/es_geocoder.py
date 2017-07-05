@@ -151,12 +151,12 @@ class ElasticGeocoder(AsyncGeocoder):
                 }
             }
         }
-        if data['street_name_post_type']:
+        if data.get('street_name_post_type'):
             point_query['query']['bool']['should'].append(
                 {'term': {'properties.street': data['street_name_post_type'].lower()}}
             )
 
-        if data['street_name']:
+        if data.get('street_name'):
             for s in data['street_name'].split(' '):
                 point_query['query']['bool']['must'].append(
                     {'term': {"properties.street": s.lower()}}
@@ -228,12 +228,12 @@ class ElasticGeocoder(AsyncGeocoder):
                 }
             }
         }
-        if data['street_name_post_type']:
+        if data.get('street_name_post_type'):
             census_query['query']['bool']['should'].append(
                 {'term': {'properties.FULLNAME': data['street_name_post_type'].lower()}}
             )
 
-        if data['street_name']:
+        if data.get('street_name'):
             for s in data['street_name'].split(' '):
                 census_query['query']['bool']['must'].append(
                     {'term': {"properties.FULLNAME": s.lower()}}

@@ -34,7 +34,7 @@ parser.add_argument('geo_id', help='Geo identifier (State abbrev, FIPS code)')
 parser.add_argument('-b', '--s3_bucket', dest='s3_bucket', required=False,
                     help='Specify S3 bucket if uploading result to S3',
                     default='nvf-tiger-2016')
-parser.add_argument('-h', '--es_host', dest='es_host', required=False,
+parser.add_argument('-e', '--es_host', dest='es_host', required=False,
                     help='Specify Elasticsearch host', default='elasticsearch')
 
 
