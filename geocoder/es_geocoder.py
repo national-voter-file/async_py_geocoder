@@ -20,7 +20,7 @@ class ElasticGeocoder(AsyncGeocoder):
     conn_limit = 100
 
     q_type = 'census'
-    es_url = 'http://elasticsearch:9200/{}/_search'.format(q_type)
+    es_host = None
     # Mapping of columns to desired ones here, substitute other columns names
     # as the new keys, while the values should remain the same
     col_map = {
@@ -37,6 +37,7 @@ class ElasticGeocoder(AsyncGeocoder):
 
     def __init__(self, *args, **kwargs):
         super(ElasticGeocoder, self).__init__(self, *args, **kwargs)
+        self.es_url = 'http://{}:9200/{}/_search'.format(self.es_host, self.q_type)
 
     async def request_geocoder(self, client, row):
         # Replace col names
@@ -150,12 +151,12 @@ class ElasticGeocoder(AsyncGeocoder):
                 }
             }
         }
-        if data['street_name_post_type']:
+        if data.get('street_name_post_type'):
             point_query['query']['bool']['should'].append(
                 {'term': {'properties.street': data['street_name_post_type'].lower()}}
             )
 
-        if data['street_name']:
+        if data.get('street_name'):
             for s in data['street_name'].split(' '):
                 point_query['query']['bool']['must'].append(
                     {'term': {"properties.street": s.lower()}}
@@ -227,12 +228,12 @@ class ElasticGeocoder(AsyncGeocoder):
                 }
             }
         }
-        if data['street_name_post_type']:
+        if data.get('street_name_post_type'):
             census_query['query']['bool']['should'].append(
                 {'term': {'properties.FULLNAME': data['street_name_post_type'].lower()}}
             )
 
-        if data['street_name']:
+        if data.get('street_name'):
             for s in data['street_name'].split(' '):
                 census_query['query']['bool']['must'].append(
                     {'term': {"properties.FULLNAME": s.lower()}}
