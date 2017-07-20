@@ -159,14 +159,9 @@ class AsyncGeocoder(object):
         async with pool.acquire() as conn:
             async with conn.transaction():
                 # Run the query passing the request argument.
-                query_address = '''
-                    SELECT {columns}
-                    FROM {table}
-                    WHERE {geo_status_col} = 1
-                    '''.format(table=self.db_table,
-                               columns=', '.join(self.cols),
-                               geo_status_col=self.geo_status_col,
-                               limit=self.query_limit)
+                query_address = 'SELECT {} FROM {} WHERE {} = 1'.format(
+                    ', '.join(self.cols), self.db_table, self.geo_status_col
+                )
                 if self.state:
                     query_address += '\nAND state_name = {}'.format(self.state)
                 query_address += '\nLIMIT {}'.format(self.query_limit)
@@ -179,30 +174,26 @@ class AsyncGeocoder(object):
                 if addr_dict:
                     status = 3
                     update_statement = '''
-                        UPDATE {table}
+                        UPDATE {}
                         SET
-                            {geom_col} = ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326),
-                            {geo_status_col} = {g_status}
-                        WHERE {id_col} = {u_id}
-                        '''.format(table=self.db_table,
-                                   geom_col=self.geo_col,
-                                   lon=addr_dict['lon'],
-                                   lat=addr_dict['lat'],
-                                   geo_status_col=self.geo_status_col,
-                                   g_status=status,
-                                   id_col=self.id_col,
-                                   u_id=household_id)
+                            {} = ST_SetSRID(ST_MakePoint({}, {}), 4326),
+                            {} = {}
+                        WHERE {} = {}
+                        '''.format(
+                            self.db_table,
+                            self.geo_col,
+                            addr_dict['lon'],
+                            addr_dict['lat'],
+                            self.geo_status_col,
+                            status,
+                            self.id_col,
+                            household_id
+                        )
                 else:
                     status = 2
-                    update_statement = '''
-                        UPDATE {table}
-                        SET {geo_status_col} = {g_status}
-                        WHERE {id_col} = {h_id}
-                        '''.format(table=self.db_table,
-                                   geo_status_col=self.geo_status_col,
-                                   g_status=status,
-                                   id_col=self.id_col,
-                                   h_id=household_id)
+                    update_statement = 'UPDATE {} SET {} = {} WHERE {} = {}'.format(
+                        self.db_table, self.geo_status_col, status, self.id_col, household_id
+                    )
                 await conn.execute(update_statement)
 
     async def handle_update(self, sem, client, row, **kwargs):
