@@ -51,8 +51,7 @@ class ElasticGeocoder(AsyncGeocoder):
         elif self.q_type == 'address':
             query_data = await self.create_point_query(row)
 
-        async with client.post(self.es_url.format(q_idx=self.q_type),
-                               data=json.dumps(query_data)) as response:
+        async with client.post(self.es_url, data=json.dumps(query_data)) as response:
             response_json = await response.json()
             if not 'hits' in response_json:
                 return row['id'], None
