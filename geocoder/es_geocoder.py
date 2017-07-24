@@ -168,56 +168,75 @@ class ElasticGeocoder(AsyncGeocoder):
             'query': {
                 'bool': {
                     'must': [
-                        {'term': {'properties.STATE': data['state_name'].lower()}}
+                        {
+                            'bool': {
+                                'should': [
+                                    {
+                                        'bool': {
+                                            'must': [
+                                                {
+                                                    'bool': {
+                                                        'should': [
+                                                            {'range': {
+                                                                'properties.LFROMHN': {'lte': data['address_number']}}},
+                                                            {'range': {
+                                                                'properties.RFROMHN': {'lte': data['address_number']}}}
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    'bool': {
+                                                        'should': [
+                                                            {'range': {
+                                                                'properties.LTOHN': {'gte': data['address_number']}}},
+                                                            {'range': {
+                                                                'properties.RTOHN': {'gte': data['address_number']}}}
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        'bool': {
+                                            'must': [
+                                                {
+                                                    'bool': {
+                                                        'should': [
+                                                            {'range': {
+                                                                'properties.LFROMHN': {'gte': data['address_number']}}},
+                                                            {'range': {
+                                                                'properties.RFROMHN': {'gte': data['address_number']}}}
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    'bool': {
+                                                        'should': [
+                                                            {'range': {
+                                                                'properties.LTOHN': {'lte': data['address_number']}}},
+                                                            {'range': {
+                                                                'properties.RTOHN': {'lte': data['address_number']}}}
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
                     ],
-                    'should': [
-                        {'term': {'properties.ZIPL': str(data['zip_code'])}},
-                        {'term': {'properties.ZIPR': str(data['zip_code'])}}
-                    ],
+                    'should': [],
                     'filter': {
                         'bool': {
-                            'should': [
+                            'must': [
+                                {'term': {'properties.STATE': data['state_name'].lower()}},
                                 {
                                     'bool': {
-                                        'must': [
-                                            {
-                                                'bool': {
-                                                    'should': [
-                                                        {'range': {'properties.LFROMHN': {'lte': data['address_number']}}},
-                                                        {'range': {'properties.RFROMHN': {'lte': data['address_number']}}}
-                                                    ]
-                                                }
-                                            },
-                                            {
-                                                'bool': {
-                                                    'should': [
-                                                        {'range': {'properties.LTOHN': {'gte': data['address_number']}}},
-                                                        {'range': {'properties.RTOHN': {'gte': data['address_number']}}}
-                                                    ]
-                                                }
-                                            }
-                                        ]
-                                    }
-                                },
-                                {
-                                    'bool': {
-                                        'must': [
-                                            {
-                                                'bool': {
-                                                    'should': [
-                                                        {'range': {'properties.LFROMHN': {'gte': data['address_number']}}},
-                                                        {'range': {'properties.RFROMHN': {'gte': data['address_number']}}}
-                                                    ]
-                                                }
-                                            },
-                                            {
-                                                'bool': {
-                                                    'should': [
-                                                        {'range': {'properties.LTOHN': {'lte': data['address_number']}}},
-                                                        {'range': {'properties.RTOHN': {'lte': data['address_number']}}}
-                                                    ]
-                                                }
-                                            }
+                                        'should': [
+                                            {'term': {'properties.ZIPL': str(data['zip_code'])}},
+                                            {'term': {'properties.ZIPR': str(data['zip_code'])}}
                                         ]
                                     }
                                 }
